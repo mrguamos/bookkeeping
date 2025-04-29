@@ -72,7 +72,14 @@ public class WalletRepository {
       .param(id)
       .query(BALANCE_ROW_MAPPER)
       .single();
+  }
 
+  public Optional<Wallet> getWalletByEmail(String email) {
+    String sql = "SELECT id, email, balance, created_at FROM mng.wallet WHERE email = ?";
+    return jdbcClient.sql(sql)
+      .param(email)
+      .query(WALLET_ROW_MAPPER)
+      .optional();
   }
 
 }

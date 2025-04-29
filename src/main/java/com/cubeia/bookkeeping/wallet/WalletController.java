@@ -45,7 +45,7 @@ public class WalletController {
     return walletService.getWallets(limit, offset);
   }
 
-  @GetMapping("/{walletId}")
+  @GetMapping("/{walletId}/balance")
   @Operation(description = "Get wallet balance by ID", summary = "Get wallet balance by ID")
   public WalletBalance getWalletBalance(@PathVariable UUID walletId) {
     var wallet = walletService.getWalletById(walletId, false);

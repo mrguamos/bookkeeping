@@ -18,6 +18,9 @@ public class WalletService {
   }
 
   public UUID createWallet(Wallet wallet) {
+    if (walletRepository.getWalletByEmail(wallet.email()).isPresent()) {
+      throw new IllegalArgumentException("Wallet with email already exists");
+    }
     return walletRepository.createWallet(wallet);
   }
 
