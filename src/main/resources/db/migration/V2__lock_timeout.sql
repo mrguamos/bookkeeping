@@ -1,0 +1,1 @@
+ALTER DATABASE bookkeeping SET lock_timeout = '10s';
