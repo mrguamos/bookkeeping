@@ -55,13 +55,13 @@ public class WalletRepository {
       .list();
   }
 
-  public Optional<Wallet> getWalletById(UUID id, boolean rowLock) {
+  public Wallet getWalletById(UUID id, boolean rowLock) {
     String sql = "SELECT id, email, balance, created_at FROM mng.wallet WHERE id = ?"
       + (rowLock ? " FOR UPDATE" : "");
     return jdbcClient.sql(sql)
       .param(id)
       .query(WALLET_ROW_MAPPER)
-      .optional();
+      .optional().orElse(null);
   }
 
   public BigDecimal adjustBalance(UUID id, BigDecimal amount) {

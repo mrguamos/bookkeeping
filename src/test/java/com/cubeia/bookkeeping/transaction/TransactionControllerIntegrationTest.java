@@ -170,6 +170,6 @@ class TransactionControllerIntegrationTest extends BaseIntegrationTest {
         // Get third page of transactions
         mockMvc.perform(get("/transactions/{walletId}?limit=2&offset=4", sourceOutput.id()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(1));
+                .andExpect(jsonPath("$.length()").value(2));
     }
 } 

@@ -8,6 +8,8 @@ import java.util.HashMap;
 import java.util.Map;
 import org.postgresql.util.PSQLException;
 import org.postgresql.util.ServerErrorMessage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -31,6 +33,8 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     "wallet_email_key", "email"
   );
 
+  private static final Logger LOG = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
   @ExceptionHandler({
     InsufficientFundsException.class,
     UniqueException.class
@@ -40,6 +44,23 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
       ex,
       HttpStatus.CONFLICT,
       ex.getMessage(),
+      null,
+      null,
+      request
+    );
+  }
+
+  @ExceptionHandler({
+    RuntimeException.class
+  })
+  ProblemDetail handleInternalServerError(RuntimeException ex, WebRequest request) {
+
+    LOG.error("Unhandled error", ex);
+
+    return super.createProblemDetail(
+      ex,
+      HttpStatus.INTERNAL_SERVER_ERROR,
+      "Internal server error",
       null,
       null,
       request
@@ -115,6 +136,8 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         );
       }
     }
+
+    LOG.error("SQL error", ex);
 
     return super.createProblemDetail(
       ex,

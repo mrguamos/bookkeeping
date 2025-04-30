@@ -11,7 +11,7 @@ CREATE SCHEMA IF NOT EXISTS txn;
 
 CREATE TABLE txn.transaction (
     id UUID PRIMARY KEY,
-    from_id UUID NOT NULL,
+    from_id UUID,
     to_id UUID NOT NULL,
     amount BIGINT NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
