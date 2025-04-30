@@ -1,5 +1,6 @@
 package com.cubeia.bookkeeping.wallet;
 
+import com.cubeia.bookkeeping.api.Page;
 import com.fasterxml.uuid.Generators;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
@@ -10,7 +11,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -39,10 +39,9 @@ public class WalletController {
   @GetMapping
   @Operation(description = "Get all wallets", summary = "Get all wallets")
   public List<Wallet> getWallets(
-    @RequestParam(required = false) Integer limit,
-    @RequestParam(required = false) Integer offset
+    @Valid Page page
   ) {
-    return walletService.getWallets(limit, offset);
+    return walletService.getWallets(page.limit(), page.offset());
   }
 
   @GetMapping("/{walletId}/balance")

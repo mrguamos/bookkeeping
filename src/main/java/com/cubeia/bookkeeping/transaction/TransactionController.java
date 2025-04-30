@@ -1,5 +1,6 @@
 package com.cubeia.bookkeeping.transaction;
 
+import com.cubeia.bookkeeping.api.Page;
 import com.cubeia.bookkeeping.wallet.TransferInput;
 import com.cubeia.bookkeeping.wallet.TransferOutput;
 import com.fasterxml.uuid.Generators;
@@ -12,7 +13,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -53,13 +53,12 @@ public class TransactionController {
   )
   public List<TransactionView> getTransactionByWalletId(
     @PathVariable UUID walletId,
-    @RequestParam(required = false) Integer limit,
-    @RequestParam(required = false) Integer offset
+    @Valid Page page
   ) {
     return transactionService.getTransactionByWalletId(
       walletId,
-      limit,
-      offset
+      page.limit(),
+      page.offset()
     );
   }
 
