@@ -1,6 +1,7 @@
 package com.cubeia.bookkeeping.transaction;
 
 import com.cubeia.bookkeeping.exception.InsufficientFundsException;
+import com.cubeia.bookkeeping.exception.SameAccountTransferException;
 import com.cubeia.bookkeeping.ledger.Ledger;
 import com.cubeia.bookkeeping.ledger.LedgerService;
 import com.cubeia.bookkeeping.wallet.WalletService;
@@ -27,7 +28,7 @@ public class TransactionService {
 
   public TransactionResult createTransaction(Transaction transaction) {
     if (transaction.fromId().equals(transaction.toId())) {
-      throw new IllegalArgumentException("Cannot transfer to the same wallet");
+      throw new SameAccountTransferException();
     }
 
     var sourceWallet = walletService.getWalletById(transaction.fromId(), true);

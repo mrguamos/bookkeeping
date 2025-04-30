@@ -1,0 +1,26 @@
+services:
+  database:
+    image: 'postgres:17.4'
+    ports:
+      - '15432:5432'
+    environment:
+      - 'POSTGRES_USER=user'
+      - 'POSTGRES_DB=bookkeeping'
+      - 'POSTGRES_PASSWORD=user'
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d bookkeeping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  application:
+    build: .
+    ports:
+      - '8080:8080'
+    environment:
+      - 'SPRING_DATASOURCE_URL=jdbc:postgresql://database:5432/bookkeeping'
+      - 'SPRING_DATASOURCE_USERNAME=user'
+      - 'SPRING_DATASOURCE_PASSWORD=user'
+    depends_on:
+      database:
+        condition: service_healthy

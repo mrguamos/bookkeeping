@@ -1,6 +1,7 @@
 package com.cubeia.bookkeeping.wallet;
 
 import com.cubeia.bookkeeping.exception.NotFoundException;
+import com.cubeia.bookkeeping.exception.UniqueException;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
@@ -19,7 +20,7 @@ public class WalletService {
 
   public UUID createWallet(Wallet wallet) {
     if (walletRepository.getWalletByEmail(wallet.email()).isPresent()) {
-      throw new IllegalArgumentException("Wallet with email already exists");
+      throw new UniqueException("Wallet with email already exists");
     }
     return walletRepository.createWallet(wallet);
   }

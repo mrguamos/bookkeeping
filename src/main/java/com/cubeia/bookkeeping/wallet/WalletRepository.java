@@ -13,16 +13,15 @@ import org.springframework.stereotype.Repository;
 @Repository
 public class WalletRepository {
 
-  private final JdbcClient jdbcClient;
-
   private static final RowMapper<Wallet> WALLET_ROW_MAPPER = (rs, rowNum) -> new Wallet.WalletBuilder()
     .id(rs.getObject("id", UUID.class))
     .email(rs.getString("email"))
     .balance(rs.getBigDecimal("balance"))
     .createdAt(rs.getTimestamp("created_at").toInstant())
     .build();
-
-  private static final RowMapper<BigDecimal> BALANCE_ROW_MAPPER = (rs, rowNum) -> rs.getBigDecimal("balance");
+  private static final RowMapper<BigDecimal> BALANCE_ROW_MAPPER = (rs, rowNum) -> rs.getBigDecimal(
+    "balance");
+  private final JdbcClient jdbcClient;
 
   public WalletRepository(JdbcClient jdbcClient) {
     this.jdbcClient = jdbcClient;

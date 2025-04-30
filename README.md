@@ -30,7 +30,7 @@ A Spring Boot-based bookkeeping application that provides a robust backend for m
 
 2. Start the application and database using Docker Compose:
    ```bash
-   docker-compose up
+   docker-compose --file compose-run.yaml up 
    ```
 
 The application will be available at `http://localhost:8080`
