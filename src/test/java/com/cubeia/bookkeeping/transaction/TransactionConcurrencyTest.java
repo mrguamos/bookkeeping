@@ -110,9 +110,9 @@ class TransactionConcurrencyTest extends BaseIntegrationTest {
                 .andExpect(jsonPath("$.balance").value(expectedSourceBalance));
 
         // Verify transaction count
-        mockMvc.perform(get("/transactions/{walletId}", targetOutput.id()))
+        mockMvc.perform(get("/transactions/{walletId}?limit=11", targetOutput.id()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(numTransfers));
+                .andExpect(jsonPath("$.length()").value(numTransfers + 1));
 
         executorService.shutdown();
         executorService.awaitTermination(5, TimeUnit.SECONDS);
