@@ -5,7 +5,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 public record Page(
   @RequestParam(required = false) @Max(200) Integer limit,
-  @RequestParam(required = false) @Max(200) Integer offset
+  @RequestParam(required = false) Integer offset
 ) {
 
 }
