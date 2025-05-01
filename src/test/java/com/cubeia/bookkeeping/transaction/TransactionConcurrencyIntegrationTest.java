@@ -143,7 +143,7 @@ class TransactionConcurrencyIntegrationTest extends BaseIntegrationTest {
         CreateWalletOutput wallet2Output = objectMapper.readValue(wallet2Response, CreateWalletOutput.class);
 
         // Number of concurrent transfer pairs
-        int numTransferPairs = 5;
+        int numTransferPairs = 50;
         // Amount to transfer in each direction
         BigDecimal transferAmount = new BigDecimal("10");
 
@@ -208,11 +208,11 @@ class TransactionConcurrencyIntegrationTest extends BaseIntegrationTest {
 
         // Verify transaction counts - each wallet should have numTransferPairs * 2 transactions
         // (initial deposit + transfers in both directions)
-        mockMvc.perform(get("/transactions/{walletId}?limit=20", wallet1Output.id()))
+        mockMvc.perform(get("/transactions/{walletId}?limit=101", wallet1Output.id()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(numTransferPairs * 2 + 1));
 
-        mockMvc.perform(get("/transactions/{walletId}?limit=20", wallet2Output.id()))
+        mockMvc.perform(get("/transactions/{walletId}?limit=101", wallet2Output.id()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(numTransferPairs * 2 + 1));
 
