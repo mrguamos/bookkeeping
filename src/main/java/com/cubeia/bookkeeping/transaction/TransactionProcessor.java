@@ -7,6 +7,7 @@ import com.cubeia.bookkeeping.ledger.Ledger;
 import com.cubeia.bookkeeping.ledger.LedgerRepository;
 import com.cubeia.bookkeeping.wallet.WalletRepository;
 import com.fasterxml.uuid.Generators;
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -48,22 +49,40 @@ public class TransactionProcessor {
       throw new SameAccountTransferException();
     }
 
-    var sourceWallet = walletRepository.getWalletById(transaction.fromId(), true);
-    if (sourceWallet == null) {
-      throw new NotFoundException("Wallet not found: " + transaction.fromId());
+    // Lock wallets in consistent order based on UUID comparison
+    UUID firstLockId, secondLockId;
+    boolean isSourceFirst;
+
+    if (transaction.fromId().compareTo(transaction.toId()) < 0) {
+      firstLockId = transaction.fromId();
+      secondLockId = transaction.toId();
+      isSourceFirst = true;
+    } else {
+      firstLockId = transaction.toId();
+      secondLockId = transaction.fromId();
+      isSourceFirst = false;
     }
 
+    // Get both wallets with locks in consistent order
+    var firstWallet = walletRepository.getWalletById(firstLockId, true);
+    if (firstWallet == null) {
+      throw new NotFoundException("Wallet not found: " + firstLockId);
+    }
+
+    var secondWallet = walletRepository.getWalletById(secondLockId, true);
+    if (secondWallet == null) {
+      throw new NotFoundException("Wallet not found: " + secondLockId);
+    }
+
+    // Reference source and destination wallets based on the lock order
+    var sourceWallet = isSourceFirst ? firstWallet : secondWallet;
+
+    // Check balance
     if (sourceWallet.balance().compareTo(transaction.amount()) < 0) {
-      throw new InsufficientFundsException(
-        "Insufficient funds"
-      );
+      throw new InsufficientFundsException("Insufficient funds");
     }
 
-    var destinationWallet = walletRepository.getWalletById(transaction.toId(), false);
-    if (destinationWallet == null) {
-      throw new NotFoundException("Wallet not found: " + transaction.fromId());
-    }
-
+    // Perform balance updates
     var sourceBalance = walletRepository.adjustBalance(transaction.fromId(),
       transaction.amount().negate()
     );
@@ -72,10 +91,10 @@ public class TransactionProcessor {
       transaction.amount()
     );
 
+    // Create transaction record
     var transactionId = transactionRepository.createTransaction(transaction);
 
-    //entry for debit
-
+    // Create ledger entries
     ledgerRepository.createLedgerEntry(
       new Ledger.LedgerBuilder()
         .id(Generators.timeBasedEpochRandomGenerator().generate())
@@ -85,8 +104,6 @@ public class TransactionProcessor {
         .walletId(transaction.fromId())
         .build()
     );
-
-    //entry for credit
 
     ledgerRepository.createLedgerEntry(
       new Ledger.LedgerBuilder()

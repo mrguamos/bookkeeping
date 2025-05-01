@@ -25,7 +25,7 @@ import com.cubeia.bookkeeping.wallet.TransferInput;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @AutoConfigureMockMvc
-class TransactionConcurrencyTest extends BaseIntegrationTest {
+class TransactionConcurrencyIntegrationTest extends BaseIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -113,6 +113,108 @@ class TransactionConcurrencyTest extends BaseIntegrationTest {
         mockMvc.perform(get("/transactions/{walletId}?limit=11", targetOutput.id()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(numTransfers + 1));
+
+        executorService.shutdown();
+        executorService.awaitTermination(5, TimeUnit.SECONDS);
+    }
+
+    @Test
+    void bidirectionalTransfers_ShouldMaintainBalanceConsistency() throws Exception {
+        // Create first wallet with initial balance
+        String wallet1Email = generateUniqueEmail();
+        CreateWalletInput wallet1Input = new CreateWalletInput(wallet1Email, new BigDecimal("1000"));
+        String wallet1Response = mockMvc.perform(post("/wallets")
+                .contentType("application/json")
+                .content(objectMapper.writeValueAsString(wallet1Input)))
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        CreateWalletOutput wallet1Output = objectMapper.readValue(wallet1Response, CreateWalletOutput.class);
+
+        // Create second wallet with initial balance
+        String wallet2Email = generateUniqueEmail();
+        CreateWalletInput wallet2Input = new CreateWalletInput(wallet2Email, new BigDecimal("1000"));
+        String wallet2Response = mockMvc.perform(post("/wallets")
+                .contentType("application/json")
+                .content(objectMapper.writeValueAsString(wallet2Input)))
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        CreateWalletOutput wallet2Output = objectMapper.readValue(wallet2Response, CreateWalletOutput.class);
+
+        // Number of concurrent transfer pairs
+        int numTransferPairs = 5;
+        // Amount to transfer in each direction
+        BigDecimal transferAmount = new BigDecimal("10");
+
+        // Create executor service for concurrent execution
+        ExecutorService executorService = Executors.newFixedThreadPool(numTransferPairs * 2);
+        List<CompletableFuture<Void>> futures = new ArrayList<>();
+
+        // Submit concurrent bidirectional transfer requests
+        for (int i = 0; i < numTransferPairs; i++) {
+            // Transfer from wallet1 to wallet2
+            CompletableFuture<Void> forward = CompletableFuture.runAsync(() -> {
+                try {
+                    TransferInput transferInput = new TransferInput(
+                            wallet1Output.id(),
+                            wallet2Output.id(),
+                            transferAmount
+                    );
+                    mockMvc.perform(post("/transactions/transfer")
+                            .contentType("application/json")
+                            .content(objectMapper.writeValueAsString(transferInput)))
+                            .andExpect(status().isOk())
+                            .andExpect(jsonPath("$.transactionId").isNotEmpty());
+                } catch (Exception e) {
+                    throw new RuntimeException("Forward transfer failed", e);
+                }
+            }, executorService);
+            
+            // Transfer from wallet2 to wallet1
+            CompletableFuture<Void> reverse = CompletableFuture.runAsync(() -> {
+                try {
+                    TransferInput transferInput = new TransferInput(
+                            wallet2Output.id(),
+                            wallet1Output.id(),
+                            transferAmount
+                    );
+                    mockMvc.perform(post("/transactions/transfer")
+                            .contentType("application/json")
+                            .content(objectMapper.writeValueAsString(transferInput)))
+                            .andExpect(status().isOk())
+                            .andExpect(jsonPath("$.transactionId").isNotEmpty());
+                } catch (Exception e) {
+                    throw new RuntimeException("Reverse transfer failed", e);
+                }
+            }, executorService);
+
+            futures.add(forward);
+            futures.add(reverse);
+        }
+
+        // Wait for all transfers to complete
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
+                .get(30, TimeUnit.SECONDS);
+
+        // Since we're doing equal transfers in both directions, final balances should equal initial balances
+        mockMvc.perform(get("/wallets/{id}/balance", wallet1Output.id()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.balance").value("1000"));
+
+        mockMvc.perform(get("/wallets/{id}/balance", wallet2Output.id()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.balance").value("1000"));
+
+        // Verify transaction counts - each wallet should have numTransferPairs * 2 transactions
+        // (initial deposit + transfers in both directions)
+        mockMvc.perform(get("/transactions/{walletId}?limit=20", wallet1Output.id()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(numTransferPairs * 2 + 1));
+
+        mockMvc.perform(get("/transactions/{walletId}?limit=20", wallet2Output.id()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(numTransferPairs * 2 + 1));
 
         executorService.shutdown();
         executorService.awaitTermination(5, TimeUnit.SECONDS);
